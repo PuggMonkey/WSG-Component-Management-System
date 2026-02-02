@@ -19,7 +19,7 @@ def create_component(conn: sqlite3.Connection, component: Component) -> int:
         """,
         (component.name, component.description, component.status, component.quantity, component.min_quantity),
     )
-    # SQLite should always provide a rowid for INSERTs into rowid tables.
+    # Ensure we got a valid rowid back.
     if cur.lastrowid is None:
         raise RuntimeError("Failed to create component: no rowid returned.")
     return int(cur.lastrowid)
@@ -31,6 +31,7 @@ def get_component(conn: sqlite3.Connection, component_id: int) -> Optional[Compo
         "SELECT id, name, description, status, quantity, min_quantity FROM components WHERE id = ?",
         (component_id,),
     ).fetchone()
+    # Return None if the component does not exist.
     if row is None:
         return None
     return Component(
@@ -49,6 +50,7 @@ def get_component_by_name(conn: sqlite3.Connection, name: str) -> Optional[Compo
         "SELECT id, name, description, status, quantity, min_quantity FROM components WHERE name = ?",
         (name,),
     ).fetchone()
+    # Return None if the component does not exist.
     if row is None:
         return None
     return Component(
@@ -66,6 +68,7 @@ def list_components(conn: sqlite3.Connection) -> list[Component]:
     rows = conn.execute(
         "SELECT id, name, description, status, quantity, min_quantity FROM components ORDER BY name ASC"
     ).fetchall()
+    # Build Component instances from the rows.
     return [
         Component(
             id=int(r["id"]),
@@ -96,7 +99,7 @@ def update_component_quantity(conn: sqlite3.Connection, component_id: int, new_q
 
 
 def update_component_min_quantity(conn: sqlite3.Connection, component_id: int, min_quantity: int) -> None:
-    # Threshold changes can affect replenishment status (service layer publishes events).
+    # Threshold changes can affect replenishment status.
     conn.execute(
         "UPDATE components SET min_quantity = ?, updated_at = datetime('now') WHERE id = ?",
         (min_quantity, component_id),
@@ -123,6 +126,7 @@ def add_log(
         """,
         (component_id, user_name, action, message, status_before, status_after, qty_before, qty_after),
     )
+    # Ensure we got a valid rowid back.
     if cur.lastrowid is None:
         raise RuntimeError("Failed to create log entry: no rowid returned.")
     return int(cur.lastrowid)
@@ -162,6 +166,7 @@ def list_low_stock(conn: sqlite3.Connection) -> list[Component]:
         ORDER BY (min_quantity - quantity) DESC, name ASC
         """
     ).fetchall()
+    # Build Component instances from the rows.
     return [
         Component(
             id=int(r["id"]),

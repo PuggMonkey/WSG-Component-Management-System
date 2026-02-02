@@ -2,10 +2,7 @@
 Component domain model.
 
 This file defines the core data + validation rules for a tracked component.
-The database/repository/service layers live in separate modules for maintainability.
 """
-
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -33,7 +30,7 @@ class Component:
     notes: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        # Domain-level validation: protects service/repository layers from bad data.
+        # Protects service/repository layers from bad data.
         if not isinstance(self.name, str) or not self.name.strip():
             raise ValueError("Component name must be a non-empty string.")
         if self.status not in self.allowed_statuses:
@@ -46,7 +43,7 @@ class Component:
             raise ValueError("min_quantity must be an integer >= 0.")
 
     def add_note(self, note: str) -> None:
-        """Adds an operational note (in-memory; persistent logs are in the database)."""
+        """Adds an operational note."""
         if not isinstance(note, str) or not note.strip():
             raise ValueError("Note must be a non-empty string.")
         self.notes.append(note.strip())
@@ -61,7 +58,8 @@ class Component:
         self.status = new_status
 
     def adjust_quantity(self, user: User, delta: int) -> None:
-        """Adjusts quantity by delta; disallows negative resulting stock."""
+        """Adjusts quantity by delta, can be positive or 
+        negative but resulting value cannot go below zero."""
         _ = user  # kept for audit/logging parity in service layer
         if not isinstance(delta, int):
             raise ValueError("Quantity delta must be an integer.")
@@ -72,5 +70,4 @@ class Component:
 
     def requires_replenishment(self) -> bool:
         """True when quantity is at/below the replenishment threshold."""
-        # Business definition: low stock at or below the minimum threshold.
         return self.quantity <= self.min_quantity

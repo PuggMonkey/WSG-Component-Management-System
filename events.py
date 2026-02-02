@@ -1,21 +1,14 @@
 """
-Minimal event bus to demonstrate an additional paradigm (event-driven).
-
-The CLI + service layer publish events when interesting state changes occur
-(e.g., low stock). Subscribers can react independently.
+The CLI + service layer publish events when interesting state changes occur.
 """
-
-from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable, DefaultDict
 from collections import defaultdict
 
-
 @dataclass(frozen=True)
 class Event:
     """Base event type."""
-
     name: str
     payload: dict[str, Any]
 
@@ -27,6 +20,7 @@ class EventBus:
         self._subscribers: DefaultDict[str, list[Callable[[Event], None]]] = defaultdict(list)
 
     def subscribe(self, event_name: str, handler: Callable[[Event], None]) -> None:
+        # Registers a handler for a specific event name.
         if not isinstance(event_name, str) or not event_name.strip():
             raise ValueError("event_name must be a non-empty string.")
         self._subscribers[event_name].append(handler)

@@ -1,28 +1,16 @@
 """
 SQLite database utilities and schema initialisation.
-
-Design goals:
-- Reliable: enables foreign keys and uses simple, explicit schema.
-- Maintainable: single place for schema and connection behaviour.
 """
 
-from __future__ import annotations
-
 import sqlite3
-from typing import Optional
-
 
 def get_connection(db_path: str) -> sqlite3.Connection:
     """
     Creates a SQLite connection with consistent settings.
-
-    - Row factory enabled for dict-like access
-    - Foreign keys enabled (off by default in sqlite)
     """
     conn = sqlite3.connect(db_path)
-    # Access rows like dicts: row["column_name"].
+    # Access rows like dicts.
     conn.row_factory = sqlite3.Row
-    # SQLite requires enabling FK enforcement explicitly for reliability.
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 

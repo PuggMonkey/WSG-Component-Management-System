@@ -18,7 +18,7 @@ from user import User
 
 
 def _prompt_non_empty(prompt: str) -> str:
-    # Input validation loop: keep prompting until user provides a non-empty string.
+    # Keep prompting until user provides a non-empty string.
     while True:
         value = input(prompt).strip()
         if value:
@@ -27,7 +27,7 @@ def _prompt_non_empty(prompt: str) -> str:
 
 
 def _prompt_int(prompt: str, *, min_value: Optional[int] = None, default: Optional[int] = None) -> int:
-    # Input validation loop: convert to integer and enforce optional minimum.
+    # Keep prompting until user provides a valid integer (with optional min constraint).
     while True:
         raw = input(prompt).strip()
         if raw == "" and default is not None:
@@ -46,6 +46,7 @@ def _prompt_int(prompt: str, *, min_value: Optional[int] = None, default: Option
 
 
 def _print_component(c: Component) -> None:
+    # Utility function for listing components.
     low_flag = "YES" if c.requires_replenishment() else "NO"
     print(
         f"- id={c.id} | name={c.name} | status={c.status} | qty={c.quantity} | "
@@ -54,7 +55,7 @@ def _print_component(c: Component) -> None:
 
 
 def _handle_low_stock(event: Event) -> None:
-    # Event-driven reaction: UI prints alerts, but service layer stays UI-agnostic.
+    # UI prints alerts, but service layer stays UI-agnostic.
     name = event.payload.get("name", "<unknown>")
     qty = event.payload.get("quantity", "<unknown>")
     component_id = event.payload.get("component_id", "<unknown>")
@@ -69,7 +70,8 @@ def run(db_path: str = "wsg_components.db") -> None:
     user = User(id=None, name=user_name)
 
     bus = EventBus()
-    # Subscribe UI handler to low-stock events (demonstrates event-driven paradigm).
+    
+    # Subscribe UI handler to low-stock events.
     bus.subscribe("LOW_STOCK", _handle_low_stock)
 
     conn = get_connection(db_path)
@@ -79,7 +81,7 @@ def run(db_path: str = "wsg_components.db") -> None:
 
     try:
         while True:
-            # Structured programming: main menu loop + selection-based dispatch.
+            # Main menu loop + selection-based dispatch.
             print("\nMenu:")
             print(" 1) List components")
             print(" 2) Add component")
@@ -103,13 +105,14 @@ def run(db_path: str = "wsg_components.db") -> None:
                         _print_component(c)
 
             elif choice == 2:
-                # Create a new component (validated in both CLI + domain model).
+                # Prompt for a new component.
                 name = _prompt_non_empty("Component name: ")
                 description = input("Description (optional): ").strip()
                 status = input("Status (active/idle/defected/retired) [idle]: ").strip() or "idle"
                 quantity = _prompt_int("Quantity (>= 0): ", min_value=0)
                 min_qty = _prompt_int("Min quantity threshold (>= 0): ", min_value=0)
 
+                # Create and add the component.
                 comp = Component(
                     id=None,
                     name=name,
@@ -186,7 +189,7 @@ def run(db_path: str = "wsg_components.db") -> None:
                         )
 
             elif choice == 8:
-                # Low-stock list is the replenishment “to do” view.
+                # List components requiring replenishment.
                 low = service.list_low_stock()
                 if not low:
                     print("No components currently require replenishment.")
